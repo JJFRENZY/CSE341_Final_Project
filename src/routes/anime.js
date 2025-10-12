@@ -5,15 +5,14 @@ import { getDb } from '../db/connect.js';
 import { jwtCheck, needWrite } from '../middleware/auth.js';
 
 const router = Router();
-const ObjectIdString = z.string().regex(/^[0-9a-fA-F]{24}$/, 'Must be 24 hex chars');
 const currentYear = new Date().getFullYear();
 
 const AnimeSchema = z.object({
   title: z.string().trim().min(1),
   genres: z.array(z.string().trim().min(1)).min(1),
-  releaseYear: z.number().int().gte(1960).lte(currentYear + 1),
-  rating: z.number().min(0).max(10).optional(),
-  episodes: z.number().int().min(0).optional(),
+  releaseYear: z.coerce.number().int().gte(1960).lte(currentYear + 1),
+  rating: z.coerce.number().min(0).max(10).optional(),
+  episodes: z.coerce.number().int().min(0).optional(),
   studio: z.string().trim().optional(),
   status: z.enum(['finished', 'airing', 'upcoming']),
   description: z.string().trim().optional(),
@@ -118,7 +117,8 @@ router.post('/', jwtCheck, needWrite, async (req, res, next) => {
   try {
     if (!req.is('application/json')) return res.status(415).json({ message: 'Content-Type must be application/json' });
     const parsed = AnimeSchema.parse(req.body);
-    const result = await getDb().collection('anime').insertOne(parsed);
+    const now = new Date();
+    const result = await getDb().collection('anime').insertOne({ ...parsed, createdAt: now, updatedAt: now });
     res.status(201).location(`/anime/${result.insertedId}`).json({ id: result.insertedId.toString() });
   } catch (err) {
     if (err instanceof z.ZodError) return res.status(400).json({ message: 'Validation error', errors: err.flatten() });
@@ -155,7 +155,7 @@ router.put('/:id', jwtCheck, needWrite, async (req, res, next) => {
     if (!req.is('application/json')) return res.status(415).json({ message: 'Content-Type must be application/json' });
     const _id = parseId(req.params.id);
     const parsed = AnimeSchema.parse(req.body);
-    const result = await getDb().collection('anime').replaceOne({ _id }, parsed);
+    const result = await getDb().collection('anime').replaceOne({ _id }, { ...parsed, updatedAt: new Date() });
     if (result.matchedCount === 0) return res.status(404).json({ message: 'Not found' });
     res.status(204).send();
   } catch (err) {

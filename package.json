@@ -7,15 +7,19 @@
   "main": "server.js",
   "scripts": {
     "dev": "nodemon server.js",
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "vitest run",
+    "test:local": "TEST_BASE=http://localhost:8045 vitest run",
+    "test:render": "TEST_BASE=https://cse341-final-project-1-4ax2.onrender.com vitest run"
   },
   "engines": {
-    "node": "20.x"
+    "node": ">=20"
   },
   "dependencies": {
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^5.1.0",
+    "express-oauth2-jwt-bearer": "^1.7.1",
     "mongodb": "^6.9.0",
     "morgan": "^1.10.1",
     "swagger-jsdoc": "^6.2.8",
@@ -23,6 +27,8 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "nodemon": "^3.1.10"
+    "nodemon": "^3.1.10",
+    "supertest": "^7.0.0",
+    "vitest": "^2.0.5"
   }
 }

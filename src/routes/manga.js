@@ -11,10 +11,10 @@ const MangaSchema = z.object({
   title: z.string().trim().min(1),
   genres: z.array(z.string().trim().min(1)).min(1),
   author: z.string().trim().min(1),
-  chapters: z.number().int().min(0).optional(),
+  chapters: z.coerce.number().int().min(0).optional(),
   status: z.enum(['ongoing', 'finished', 'hiatus']),
-  releaseYear: z.number().int().gte(1960).lte(currentYear + 1).optional(),
-  rating: z.number().min(0).max(10).optional(),
+  releaseYear: z.coerce.number().int().gte(1960).lte(currentYear + 1).optional(),
+  rating: z.coerce.number().min(0).max(10).optional(),
   description: z.string().trim().optional(),
   coverImage: z.string().url().optional()
 });
@@ -117,7 +117,8 @@ router.post('/', jwtCheck, needWrite, async (req, res, next) => {
   try {
     if (!req.is('application/json')) return res.status(415).json({ message: 'Content-Type must be application/json' });
     const parsed = MangaSchema.parse(req.body);
-    const result = await getDb().collection('manga').insertOne(parsed);
+    const now = new Date();
+    const result = await getDb().collection('manga').insertOne({ ...parsed, createdAt: now, updatedAt: now });
     res.status(201).location(`/manga/${result.insertedId}`).json({ id: result.insertedId.toString() });
   } catch (err) {
     if (err instanceof z.ZodError) return res.status(400).json({ message: 'Validation error', errors: err.flatten() });
@@ -154,7 +155,7 @@ router.put('/:id', jwtCheck, needWrite, async (req, res, next) => {
     if (!req.is('application/json')) return res.status(415).json({ message: 'Content-Type must be application/json' });
     const _id = parseId(req.params.id);
     const parsed = MangaSchema.parse(req.body);
-    const result = await getDb().collection('manga').replaceOne({ _id }, parsed);
+    const result = await getDb().collection('manga').replaceOne({ _id }, { ...parsed, updatedAt: new Date() });
     if (result.matchedCount === 0) return res.status(404).json({ message: 'Not found' });
     res.status(204).send();
   } catch (err) {
